@@ -8,6 +8,7 @@
 #define DECK_SIZE 52
 #define SUIT_SIZE 4
 #define CARD_SIZE 13
+#define BLACKJACK 21
 
 typedef struct {
     char* label;
@@ -67,6 +68,30 @@ CARD get_card(const char* suits[], const BASE_CARD cards[], CARD used_cards[DECK
     return card;
 }
 
+void handle_player_cards(
+    short* used_cards_index,
+    PLAYER* current_player,
+    const char* suits[],
+    const BASE_CARD cards[],
+    CARD used_cards[])
+{
+    while (*used_cards_index++ < DECK_SIZE && current_player->score < BLACKJACK) {
+        CARD card = get_card(suits, cards, used_cards);
+        current_player->score += card.value;
+        printf("%s - Score %d\n", card.card_label, current_player->score);
+
+        if (current_player->score > BLACKJACK) break;
+        if (current_player->npc) {
+            if (current_player->score >= 17) break;
+            continue;
+        }
+
+        printf("Hit (ENTER) or Stand (s)? ");
+        char action = getchar();
+        if (action == 's') break;
+    }
+}
+
 int main()
 {
     srand(time(NULL));
@@ -85,24 +110,10 @@ int main()
         PLAYER* current_player = &players[i];
         printf("Player: %s\n", current_player->name);
 
-        while (used_cards_index < DECK_SIZE && current_player->score < 21) {
-            CARD card = get_card(suits, cards, used_cards);
-            current_player->score += card.value;
-            printf("%s - Score %d\n", card.card_label, current_player->score);
-
-            if (current_player->score > 21) break;
-            if (current_player->npc) {
-                if (current_player->score >= 17) break;
-                continue;
-            }
-
-            printf("Hit (ENTER) or Stand (s)? ");
-            char action = getchar();
-            if (action == 's') break;
-        }
+        handle_player_cards(&used_cards_index, current_player, suits, cards, used_cards);
 
         printf("Final score: %d\n\n", current_player->score);
-        if (current_player->score <= 21) winner = current_player;
+        if (current_player->score <= BLACKJACK) winner = current_player;
     }
 
     if (winner) printf("%s is the winner!\n", winner->name);
