@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,6 +32,37 @@ const CARD cards[] = {
 CARD used_cards[DECK_SIZE] = {};
 short used_cards_index = 0;
 
+void init_term()
+{
+    printf("\e[?1049h"); // Enable alternate buffer
+    printf("\e[2J");     // Clean the screen
+    printf("\e[H");      // Move the cursor home
+}
+
+void clear_term()
+{
+    printf("\e[2J");     // Clean the screen
+    printf("\e[H");      // Move the cursor home
+}
+
+void reset_term()
+{
+    clear_term();
+    printf("\e[?1049l"); // Disable alternate buffer
+}
+
+void reset_term_exit(int signal)
+{
+    reset_term();
+    exit(signal);
+}
+
+void pause_for_input()
+{
+    printf("Enter para continuar. . .\n");
+    getchar();
+}
+
 size_t already_used(CARD card)
 {
     for (short i = 0; i < DECK_SIZE; ++i) {
@@ -53,6 +85,9 @@ CARD get_card()
 void handle_player_cards(PLAYER* current_player)
 {
     while (used_cards_index < DECK_SIZE && current_player->score < BLACKJACK) {
+        clear_term();
+        printf("Player: %s\n", current_player->name);
+
         CARD card = get_card();
         used_cards[++used_cards_index] = card;
 
@@ -76,26 +111,32 @@ void handle_players(PLAYER players[], PLAYER** winner)
 {
     for (size_t i = 0; i < 2; ++i) {
         PLAYER* current_player = &players[i];
-        printf("Player: %s\n", current_player->name);
 
         handle_player_cards(current_player);
 
         printf("Final score: %d\n\n", current_player->score);
         if (current_player->score <= BLACKJACK) *winner = current_player;
+
+        pause_for_input();
     }
 }
 
 int main()
 {
     srand(time(NULL));
+    init_term();
+    signal(SIGINT, reset_term_exit);
 
     PLAYER players[] = { { "Player", {}, 0, FALSE }, { "House", {}, 0, TRUE } };
     PLAYER* winner = NULL;
 
     handle_players(players, &winner);
+    clear_term();
 
     if (winner) printf("%s is the winner!\n", winner->name);
     else printf("Bust!\n");
 
+    pause_for_input();
+    reset_term();
     return 0;
 }
