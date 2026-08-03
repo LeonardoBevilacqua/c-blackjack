@@ -11,4 +11,4 @@ Blackjack game done with C.
 - Improve NPC decision.
 - Add chips mechanic.
 - Handle soft and hard hand.
-- Immediately stop when score is 21.
+- BUG: if house stops with score less than 21, it will mark as winner even if player has won.
