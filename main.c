@@ -57,6 +57,21 @@ void reset_term_exit(int signal)
     exit(signal);
 }
 
+char* concat(const char* str_1, const char* str_2, const char* separator)
+{
+    const size_t len_1 = strlen(str_1);
+    const size_t len_2 = strlen(str_2);
+    const size_t len_3 = strlen(separator);
+
+    char* result = malloc(len_1 + len_2 + len_3 + 1);
+
+    memcpy(result, str_1, len_1);
+    memcpy(result + len_1, separator, len_3);
+    memcpy(result + len_1 + len_3, str_2, len_2 + 1);
+
+    return result;
+}
+
 void pause_for_input()
 {
     printf("Enter to continue. . .\n");
@@ -127,8 +142,7 @@ void handle_player_cards(PLAYER* current_player)
     }
 }
 
-// TODO remove winner and refactor how to check
-void handle_players(PLAYER players[], PLAYER** winner)
+void handle_players(PLAYER players[])
 {
     for (size_t i = 0; i < 2; ++i) {
         PLAYER* current_player = &players[i];
@@ -136,10 +150,41 @@ void handle_players(PLAYER players[], PLAYER** winner)
         handle_player_cards(current_player);
 
         printf("Final score: %d\n\n", current_player->score);
-        if (current_player->score <= BLACKJACK) *winner = current_player;
 
         pause_for_input();
     }
+}
+
+void print_winners(PLAYER players[])
+{
+    size_t blackjack_result = FALSE;
+    size_t winners = 0;
+    size_t closest_score = 0;
+    char* winners_names = NULL;
+    char* separator = ", ";
+
+    for (size_t i = 0; i < 2; i++) {
+        size_t name_len = strlen(players[i].name);
+
+        if (players[i].score > BLACKJACK) continue;
+        if (players[i].score == BLACKJACK) {
+            if (closest_score) winners_names = NULL;
+            blackjack_result = TRUE;
+            ++winners;
+            winners_names = winners_names ?
+                concat(winners_names, players[i].name, separator) : players[i].name;
+        }
+        if (!blackjack_result && players[i].score > closest_score) {
+            closest_score = players[i].score;
+            winners_names = players[i].name;
+            ++winners;
+        }
+    }
+    if (winners) printf("%s %s the winner%c!\n",
+                        winners_names,
+                        winners > 1 ? "are" : "is",
+                        winners > 1 ? 's' : '\0');
+    else printf("Bust!\n");
 }
 
 int main()
@@ -149,13 +194,12 @@ int main()
     signal(SIGINT, reset_term_exit);
 
     PLAYER players[] = { { "Player", {}, 0, FALSE }, { "House", {}, 0, TRUE } };
-    PLAYER* winner = NULL;
+    // PLAYER players[] = { { "Dealer", {}, 0, TRUE }, { "Player", {}, 0, FALSE } };
 
-    handle_players(players, &winner);
+    handle_players(players);
     clear_term();
 
-    if (winner) printf("%s is the winner!\n", winner->name);
-    else printf("Bust!\n");
+    print_winners(players);
 
     pause_for_input();
     reset_term();
