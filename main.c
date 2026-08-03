@@ -71,13 +71,9 @@ void handle_player_cards(PLAYER* current_player)
     }
 }
 
-int main()
+// TODO remove winner and refactor how to check
+void handle_players(PLAYER players[], PLAYER** winner)
 {
-    srand(time(NULL));
-
-    PLAYER players[] = { { "Player", {}, 0, FALSE }, { "House", {}, 0, TRUE } };
-    PLAYER* winner = NULL;
-
     for (size_t i = 0; i < 2; ++i) {
         PLAYER* current_player = &players[i];
         printf("Player: %s\n", current_player->name);
@@ -85,11 +81,21 @@ int main()
         handle_player_cards(current_player);
 
         printf("Final score: %d\n\n", current_player->score);
-        if (current_player->score <= BLACKJACK) winner = current_player;
+        if (current_player->score <= BLACKJACK) *winner = current_player;
     }
+}
+
+int main()
+{
+    srand(time(NULL));
+
+    PLAYER players[] = { { "Player", {}, 0, FALSE }, { "House", {}, 0, TRUE } };
+    PLAYER* winner = NULL;
+
+    handle_players(players, &winner);
 
     if (winner) printf("%s is the winner!\n", winner->name);
-    else printf("Bust!");
+    else printf("Bust!\n");
 
     return 0;
 }
