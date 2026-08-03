@@ -59,7 +59,7 @@ void reset_term_exit(int signal)
 
 void pause_for_input()
 {
-    printf("Enter para continuar. . .\n");
+    printf("Enter to continue. . .\n");
     getchar();
 }
 
@@ -83,25 +83,37 @@ CARD* get_card()
     return card;
 }
 
+void print_player_status(PLAYER* player)
+{
+    printf("%s\n", player->name);
+    printf("\tHand:  [");
+
+    size_t i = 0;
+    while (player->cards[i]) {
+        printf("%c%s", player->cards[i]->suit, player->cards[i]->label);
+        if (player->cards[i+1]) printf(", ");
+        ++i;
+    }
+    printf("]\n");
+    printf("\tScore: %d", player->score);
+    if (player->score == BLACKJACK) printf(" BLACKJACK!");
+    if (player->score > BLACKJACK) printf(" BUST!");
+    printf("\n");
+}
+
+
 void handle_player_cards(PLAYER* current_player)
 {
     size_t player_cards_index = 0;
     while (used_cards_index < DECK_SIZE && current_player->score < BLACKJACK) {
         clear_term();
-        printf("Player: %s\n", current_player->name);
-
         CARD* card = get_card();
 
         used_cards[used_cards_index++] = card;
         current_player->score += card->value;
         current_player->cards[player_cards_index++] = card;
 
-        printf("Cards: [");
-        for (size_t i = 0; i < player_cards_index; ++i) {
-            printf("%c%s", current_player->cards[i]->suit, current_player->cards[i]->label);
-            if (i != player_cards_index - 1) printf(", ");
-        }
-        printf("] - Score %d\n", current_player->score);
+        print_player_status(current_player);
 
         if (current_player->score >= BLACKJACK) break;
         if (current_player->npc) {
