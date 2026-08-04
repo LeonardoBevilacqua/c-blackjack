@@ -187,21 +187,35 @@ void print_winners(PLAYER players[])
     else printf("Bust!\n");
 }
 
+void reset_players(PLAYER players[])
+{
+    for (size_t i = 0; i < 2; ++i) {
+        memset(players[i].cards, 0, sizeof(players[i].cards));
+        players[i].score = 0;
+    }
+}
+
 int main()
 {
     srand(time(NULL));
     init_term();
     signal(SIGINT, reset_term_exit);
 
+    char play_again = 'y';
     PLAYER players[] = { { "Player", {}, 0, FALSE }, { "House", {}, 0, TRUE } };
     // PLAYER players[] = { { "Dealer", {}, 0, TRUE }, { "Player", {}, 0, FALSE } };
 
-    handle_players(players);
-    clear_term();
+    do {
+        handle_players(players);
+        clear_term();
 
-    print_winners(players);
+        print_winners(players);
 
-    pause_for_input();
+        pause_for_input();
+        reset_players(players);
+        printf("Play again? (Y/n) ");
+    } while (play_again = getchar() != 'n' && play_again != 'N');
+
     reset_term();
     return 0;
 }
