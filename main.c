@@ -98,22 +98,54 @@ CARD* get_card()
     return card;
 }
 
-void print_player_status(PLAYER* player)
+char* suit_icon(char suit)
 {
-    printf("%s\n", player->name);
+    switch (suit) {
+        case 'C': return "♧";
+        case 'D': return "♢";
+        case 'H': return "♡";
+        case 'S': return "♤";
+    }
+}
+
+void print_card(CARD* card)
+{
+    printf("-------\n");
+    printf("|%-2s   |\n", card->label);
+    printf("|  %s  |\n", suit_icon(card->suit));
+    printf("|   %2s|\n", card->label);
+    printf("-------\n");
+}
+
+void print_cards_simple(CARD* cards[])
+{
     printf("\tHand:  [");
 
     size_t i = 0;
-    while (player->cards[i]) {
-        printf("%c%s", player->cards[i]->suit, player->cards[i]->label);
-        if (player->cards[i+1]) printf(", ");
+    while (cards[i]) {
+        printf("%c%s", cards[i]->suit, cards[i]->label);
+        if (cards[i+1]) printf(", ");
         ++i;
     }
     printf("]\n");
+}
+
+void print_cards_detailed(CARD* cards[])
+{
+    size_t i = 0;
+    while(cards[i]) print_card(cards[i++]);
+}
+
+void print_player_status(PLAYER* player)
+{
+    printf("%s\n", player->name);
+    print_cards_simple(player->cards);
     printf("\tScore: %d", player->score);
     if (player->score == BLACKJACK) printf(" BLACKJACK!");
     if (player->score > BLACKJACK) printf(" BUST!");
     printf("\n");
+
+    print_cards_detailed(player->cards);
 }
 
 
@@ -203,7 +235,6 @@ int main()
 
     char play_again = 'y';
     PLAYER players[] = { { "Player", {}, 0, FALSE }, { "House", {}, 0, TRUE } };
-    // PLAYER players[] = { { "Dealer", {}, 0, TRUE }, { "Player", {}, 0, FALSE } };
 
     do {
         handle_players(players);
