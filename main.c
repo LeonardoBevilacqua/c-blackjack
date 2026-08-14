@@ -117,6 +117,22 @@ void print_card(CARD* card)
     printf("-------\n");
 }
 
+void print_card_side_by_side(CARD* card, size_t index)
+{
+    size_t col = index * 10;
+    char col_sequence[32] = "";
+    if (index != 0) {
+        printf("\e[%dA", 5);
+        snprintf(col_sequence, sizeof(col_sequence), "\e[%dC", col);
+    }
+
+    printf("%s-------\n", col_sequence);
+    printf("%s|%-2s   |\n", col_sequence, card->label);
+    printf("%s|  %s  |\n", col_sequence, suit_icon(card->suit));
+    printf("%s|   %2s|\n", col_sequence, card->label);
+    printf("%s-------\n", col_sequence);
+}
+
 void print_cards_simple(CARD* cards[])
 {
     printf("\tHand:  [");
@@ -133,7 +149,8 @@ void print_cards_simple(CARD* cards[])
 void print_cards_detailed(CARD* cards[])
 {
     size_t i = 0;
-    while(cards[i]) print_card(cards[i++]);
+    // while(cards[i]) print_card(cards[i++]);
+    while(cards[i]) print_card_side_by_side(cards[i], i++);
 }
 
 void print_player_status(PLAYER* player)
