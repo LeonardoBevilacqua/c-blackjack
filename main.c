@@ -3,11 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #define FALSE 0
 #define TRUE 1
 #define DECK_SIZE 52
 #define BLACKJACK 21
+
+enum Layout { VERTICAL, HORIZONTAL };
+enum DisplayMode { SIMPLE, CARDS, BOTH };
 
 typedef struct {
     char suit;
@@ -31,6 +35,8 @@ CARD cards[] = {
 };
 CARD* used_cards[DECK_SIZE] = {};
 short used_cards_index = 0;
+enum Layout layout = HORIZONTAL;
+enum DisplayMode display_mode = CARDS;
 
 void init_term()
 {
@@ -149,20 +155,22 @@ void print_cards_simple(CARD* cards[])
 void print_cards_detailed(CARD* cards[])
 {
     size_t i = 0;
-    // while(cards[i]) print_card(cards[i++]);
-    while(cards[i]) print_card_side_by_side(cards[i], i++);
+    if (layout == HORIZONTAL) while(cards[i]) print_card_side_by_side(cards[i], i++);
+    else while(cards[i]) print_card(cards[i++]);
 }
 
 void print_player_status(PLAYER* player)
 {
     printf("%s\n", player->name);
-    print_cards_simple(player->cards);
+    if (display_mode == SIMPLE || display_mode == BOTH)
+        print_cards_simple(player->cards);
     printf("\tScore: %d", player->score);
     if (player->score == BLACKJACK) printf(" BLACKJACK!");
     if (player->score > BLACKJACK) printf(" BUST!");
     printf("\n");
 
-    print_cards_detailed(player->cards);
+    if (display_mode == CARDS || display_mode == BOTH)
+        print_cards_detailed(player->cards);
 }
 
 
@@ -244,8 +252,69 @@ void reset_players(PLAYER players[])
     }
 }
 
-int main()
+void usage(char* program_name)
 {
+    printf("Usage: program [OPTIONS]\n" \
+           "Options:\n" \
+           "  -h              Display this help message and exit.\n" \
+           "  -v              Use vertical layout.\n" \
+           "                  Only applies when display mode is CARDS or BOTH.\n" \
+           "  -s MODE         Set display mode.\n" \
+           "                  MODE must be one of:\n" \
+           "                    SIMPLE   Simple display\n" \
+           "                    CARDS    Card display\n" \
+           "                    BOTH     Simple and card display\n" \
+           "Examples:\n" \
+           "  %1$s -h\n" \
+           "  %1$s -s SIMPLE\n" \
+           "  %1$s -s CARDS\n" \
+           "  %1$s -s CARDS -v\n" \
+           "  %1$s -s BOTH -v\n", program_name);
+}
+
+void handle_display_mode(char* program_name)
+{
+    if (strcmp(optarg, "SIMPLE") == 0)
+        display_mode = SIMPLE;
+    else if (strcmp(optarg, "CARDS") == 0)
+        display_mode = CARDS;
+    else if (strcmp(optarg, "BOTH") == 0)
+        display_mode = BOTH;
+    else {
+        printf("%s: Invalid value for display mode\n", program_name);
+        usage(program_name);
+        exit(1);
+    }
+}
+
+void handle_option(size_t opt, char* program_name)
+{
+    switch (opt) {
+        case 'v':
+            layout = VERTICAL;
+            break;
+        case 's':
+            handle_display_mode(program_name);
+            break;
+        case 'h':
+            usage(program_name);
+            exit(0);
+        default:
+            usage(program_name);
+            exit(1);
+    }
+}
+
+void handle_options(int argc, char **argv)
+{
+    size_t opt;
+    while ((opt = getopt(argc, argv, "hvs:")) != -1)
+        handle_option(opt, argv[0]);
+}
+
+int main(int argc, char **argv)
+{
+    handle_options(argc, argv);
     srand(time(NULL));
     init_term();
     signal(SIGINT, reset_term_exit);
