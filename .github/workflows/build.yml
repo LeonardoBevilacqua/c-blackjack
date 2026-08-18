@@ -1,0 +1,65 @@
+name: build
+
+on:
+  push:
+    tags: ["v*"]        # tagging v1.2.3 publishes a release
+  workflow_dispatch: {}  # or run it manually from the Actions tab
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux + Windows cross-compile from the Ubuntu runner.
+          - os: ubuntu-latest
+            target: linux-static
+            artifact: blackjack-linux
+            binary: blackjack
+          - os: ubuntu-latest
+            target: windows
+            artifact: blackjack-windows.exe
+            binary: blackjack.exe
+          # macOS must be built natively.
+          - os: macos-latest
+            target: default
+            artifact: blackjack-macos
+            binary: blackjack
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            experimental-features = nix-command flakes
+
+      - name: Build
+        run: nix build .#${{ matrix.target }} -L
+
+      - name: Stage artifact
+        run: |
+          mkdir -p dist
+          cp "result/bin/${{ matrix.binary }}" "dist/${{ matrix.artifact }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}
+
+  release:
+    # Only publish a GitHub Release when a version tag is pushed.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
